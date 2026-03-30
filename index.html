@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>从窗到果 (Windows to Mac) 交互迁移指南</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -12,10 +12,11 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
-            background-color: #F5F5F7; /* 苹果经典浅灰底色 */
+            background-color: #F5F5F7; 
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
-            color: #1d1d1f; /* 苹果深灰色文字 */
+            color: #1d1d1f; 
             -webkit-font-smoothing: antialiased;
+            touch-action: none; 
         }
         #canvas-container {
             position: absolute;
@@ -26,14 +27,12 @@
             z-index: 1;
         }
 
-        /* --- 动态明亮环境光与设计感网格背景 --- */
         .ambient-bg { position: fixed; inset: 0; z-index: -2; overflow: hidden; background: #ffffff; }
         .orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.6; animation: drift 25s infinite alternate ease-in-out; }
-        .orb-1 { width: 60vw; height: 60vw; background: #D1E8FF; top: -10%; left: -10%; } /* 浅蓝 */
-        .orb-2 { width: 70vw; height: 70vw; background: #FFD4E5; bottom: -20%; right: -10%; animation-delay: -5s; } /* 淡粉 */
-        .orb-3 { width: 50vw; height: 50vw; background: #E5FFD4; top: 30%; left: 30%; animation-delay: -10s; } /* 薄荷绿 */
+        .orb-1 { width: 60vw; height: 60vw; background: #D1E8FF; top: -10%; left: -10%; } 
+        .orb-2 { width: 70vw; height: 70vw; background: #FFD4E5; bottom: -20%; right: -10%; animation-delay: -5s; } 
+        .orb-3 { width: 50vw; height: 50vw; background: #E5FFD4; top: 30%; left: 30%; animation-delay: -10s; } 
         
-        /* 降低模糊度，加入细微网格线增加设计感 */
         .global-glass { 
             position: fixed; inset: 0; z-index: -1; 
             backdrop-filter: saturate(120%) blur(25px); 
@@ -42,10 +41,9 @@
             background-image: 
                 linear-gradient(rgba(0,0,0,0.03) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px);
-            background-size: 30px 30px; /* 30px 间距的设计网格 */
+            background-size: 30px 30px; 
         }
         
-        /* 缩小且克制的鼠标放大镜 */
         #mouse-lens {
             position: absolute;
             width: 50px;
@@ -70,11 +68,60 @@
         }
         @keyframes drift { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(5vw, 5vh) scale(1.1); } }
 
-        canvas {
-            display: block;
-        }
+        canvas { display: block; }
         
-        /* --- 明亮模式的卡片 UI --- */
+        #top-ui {
+            position: absolute;
+            top: 40px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        #hint {
+            text-shadow: 0 2px 8px rgba(255,255,255,0.8);
+            letter-spacing: -0.02em;
+            opacity: 0.8;
+            transition: opacity 0.5s ease;
+            margin-bottom: 24px;
+        }
+
+        #group-tabs {
+            pointer-events: auto;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 4px;
+            background: rgba(226, 232, 240, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 4px;
+            border-radius: 9999px;
+            border: 1px solid rgba(255,255,255,0.5);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            max-width: 90vw;
+        }
+        .group-tab {
+            padding: 8px 20px;
+            border-radius: 9999px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            color: #64748b;
+            border: none;
+            outline: none;
+        }
+        .group-tab:hover { color: #0f172a; }
+        .group-tab.active {
+            background-color: #ffffff;
+            color: #0f172a;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
         #info-overlay {
             position: absolute;
             top: 0;
@@ -90,72 +137,50 @@
             transition: opacity 0.5s cubic-bezier(0.32, 0.72, 0, 1);
             background: rgba(255, 255, 255, 0.1);
         }
-        #info-overlay.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
+        #info-overlay.active { opacity: 1; pointer-events: auto; }
         
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
         .apple-glass {
             background: rgba(255, 255, 255, 0.85);
             backdrop-filter: saturate(180%) blur(20px);
             -webkit-backdrop-filter: saturate(180%) blur(20px);
             border: 1px solid rgba(255, 255, 255, 1);
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.08), 
-                        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.8);
             border-radius: 32px;
             transform: scale(0.9) translateY(20px);
             transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); 
         }
-        #info-overlay.active .apple-glass {
-            transform: scale(1) translateY(0);
-        }
-
+        #info-overlay.active .apple-glass { transform: scale(1) translateY(0); }
         .text-apple-secondary { color: #86868b; }
-        
-        #hint {
-            position: absolute;
-            top: 60px;
-            width: 100%;
-            text-align: center;
-            z-index: 5;
-            pointer-events: none;
-            text-shadow: 0 2px 8px rgba(255,255,255,0.8);
-            letter-spacing: -0.02em;
-            opacity: 0.8;
-            transition: opacity 0.5s ease;
+
+        @media (max-width: 768px) {
+            #top-ui { top: 20px; }
+            #hint { font-size: 1.125rem; margin-bottom: 12px; }
+            #group-tabs { border-radius: 16px; padding: 6px; }
+            .group-tab { padding: 6px 10px; font-size: 12px; border-radius: 12px;}
+            .apple-glass { max-height: 85vh; padding: 1.5rem !important; border-radius: 24px; }
+            #card-visualization > div { transform: scale(0.85); transform-origin: center; }
+            #card-visualization { height: 120px; margin-bottom: 16px; }
         }
 
-        /* --- 动态操作演示动画关键帧 --- */
-        @keyframes dragTrash {
-            0%, 15% { transform: translate(-60px, -30px) scale(1); opacity: 1; }
-            40%, 50% { transform: translate(60px, 30px) scale(1); opacity: 1; }
-            70%, 100% { transform: translate(60px, 30px) scale(0.1); opacity: 0; }
-        }
-        @keyframes windowGenie {
-            0%, 20% { transform: scale(1) translateY(0); opacity: 1; }
-            40%, 60% { transform: scale(0.1) translateY(150px) translateX(100px); opacity: 0; border-radius: 50%; }
-            80%, 100% { transform: scale(1) translateY(0); opacity: 1; }
-        }
-        @keyframes spotlightPop {
-            0%, 10% { transform: scale(0.8) translateY(-20px); opacity: 0; filter: blur(10px); }
-            20%, 80% { transform: scale(1) translateY(0); opacity: 1; filter: blur(0); }
-            90%, 100% { transform: scale(0.8) translateY(-20px); opacity: 0; filter: blur(10px); }
-        }
-        @keyframes screenshotBox {
-            0%, 10% { width: 0; height: 0; top: 20%; left: 20%; opacity: 0; }
-            20% { width: 0; height: 0; top: 20%; left: 20%; opacity: 1; box-shadow: 0 0 0 999px rgba(0,0,0,0.15); }
-            50%, 70% { width: 60%; height: 50%; top: 20%; left: 20%; opacity: 1; box-shadow: 0 0 0 999px rgba(0,0,0,0.15); }
-            80%, 100% { opacity: 0; }
-        }
-        @keyframes typeText {
-            0%, 20% { width: 0; }
-            40%, 80% { width: 100%; }
-            100% { width: 0; }
-        }
+        /* --- 动画关键帧 --- */
+        @keyframes dragTrash { 0%, 15% { transform: translate(-60px, -30px) scale(1); opacity: 1; } 40%, 50% { transform: translate(60px, 30px) scale(1); opacity: 1; } 70%, 100% { transform: translate(60px, 30px) scale(0.1); opacity: 0; } }
+        @keyframes windowGenie { 0%, 20% { transform: scale(1) translateY(0); opacity: 1; } 40%, 60% { transform: scale(0.1) translateY(150px) translateX(100px); opacity: 0; border-radius: 50%; } 80%, 100% { transform: scale(1) translateY(0); opacity: 1; } }
+        @keyframes spotlightPop { 0%, 10% { transform: scale(0.8) translateY(-20px); opacity: 0; filter: blur(10px); } 20%, 80% { transform: scale(1) translateY(0); opacity: 1; filter: blur(0); } 90%, 100% { transform: scale(0.8) translateY(-20px); opacity: 0; filter: blur(10px); } }
+        @keyframes typeText { 0%, 20% { width: 0; } 40%, 80% { width: 100%; } 100% { width: 0; } }
+        @keyframes dockBounce { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-15px) scale(1.2); } }
+        @keyframes scatterWindows { 0%, 20% { transform: translate(0, 0) scale(1); } 40%, 80% { transform: translate(var(--tx), var(--ty)) scale(0.5); } 100% { transform: translate(0, 0) scale(1); } }
+        @keyframes qlFile { 0%, 20% { opacity: 1; transform: scale(1); } 30%, 80% { opacity: 0; transform: scale(0.8); } 90%, 100% { opacity: 1; transform: scale(1); } }
+        @keyframes qlPopup { 0%, 20% { opacity: 0; transform: scale(0.5) translateY(20px); } 30%, 80% { opacity: 1; transform: scale(1) translateY(0); } 90%, 100% { opacity: 0; transform: scale(0.5) translateY(20px); } }
+
         .animate-drag-trash { animation: dragTrash 3s cubic-bezier(0.2, 0.8, 0.2, 1) infinite; }
         .animate-window-genie { animation: windowGenie 4s ease-in-out infinite; }
         .animate-spotlight { animation: spotlightPop 4s cubic-bezier(0.175, 0.885, 0.32, 1.275) infinite; }
-        .animate-screenshot { animation: screenshotBox 4s ease-in-out infinite; }
+        .animate-dock-bounce { animation: dockBounce 2s cubic-bezier(0.28, 0.84, 0.42, 1) infinite; }
+        .animate-ql-file { animation: qlFile 4s cubic-bezier(0.175, 0.885, 0.32, 1.275) infinite; }
+        .animate-ql-popup { animation: qlPopup 4s cubic-bezier(0.175, 0.885, 0.32, 1.275) infinite; }
     </style>
 </head>
 <body>
@@ -168,73 +193,74 @@
     <div class="global-glass"></div>
     <div id="mouse-lens"></div>
 
-    <!-- 提示文案颜色适配明亮主题 -->
-    <div id="hint" class="text-2xl font-semibold text-slate-800">
-        选择一个 <span class="text-blue-600">Windows</span> 习惯，开启平滑迁移
+    <div id="top-ui">
+        <div id="hint" class="text-2xl font-semibold text-slate-800">
+            选择 <span class="text-blue-600">Windows</span> 习惯，平滑迁移
+        </div>
+        
+        <div id="group-tabs">
+            <button class="group-tab active" data-group="basic">基础操作</button>
+            <button class="group-tab" data-group="system">系统界面</button>
+            <button class="group-tab" data-group="advanced">进阶效能</button>
+            <button class="group-tab text-blue-600" data-group="office">表格与办公</button>
+        </div>
     </div>
 
-    <!-- Canvas 画布容器 -->
     <div id="canvas-container">
         <canvas id="appCanvas"></canvas>
     </div>
 
-    <!-- 毛玻璃信息卡片 (HTML UI) -->
     <div id="info-overlay">
-        <div class="apple-glass p-10 max-w-3xl w-full mx-4 relative overflow-hidden">
-            <!-- 柔和的点缀光晕 -->
+        <div class="apple-glass p-10 max-w-3xl w-full mx-4 relative overflow-y-auto no-scrollbar">
             <div class="absolute -top-24 -right-24 w-48 h-48 bg-purple-200 rounded-full mix-blend-multiply filter blur-[60px] opacity-50"></div>
             <div class="absolute -bottom-24 -left-24 w-48 h-48 bg-blue-200 rounded-full mix-blend-multiply filter blur-[60px] opacity-50"></div>
 
-            <button id="close-btn" class="absolute top-6 right-6 w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-all duration-300">
+            <button id="close-btn" class="absolute top-4 right-4 md:top-6 md:right-6 w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-all duration-300 z-50">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
             </button>
             
             <div class="text-center mb-6 mt-2 relative z-10">
-                <h2 id="card-title" class="text-4xl font-bold tracking-tight mb-2 text-slate-900" style="letter-spacing: -0.03em;">对比主题</h2>
-                <p class="text-apple-secondary text-lg font-medium">操作逻辑映射</p>
+                <h2 id="card-title" class="text-3xl md:text-4xl font-bold tracking-tight mb-1 text-slate-900" style="letter-spacing: -0.03em;">对比主题</h2>
+                <p class="text-apple-secondary text-sm md:text-lg font-medium">操作逻辑映射</p>
             </div>
 
-            <!-- 动画舱背景变亮 -->
             <div id="card-visualization" class="w-full h-40 mb-6 rounded-2xl bg-slate-50 border border-slate-200 shadow-inner flex items-center justify-center overflow-hidden relative z-10">
             </div>
 
             <div class="flex flex-col md:flex-row gap-4 items-stretch justify-center relative z-10">
-                <!-- Windows 侧 -->
-                <div class="flex-1 bg-black/[0.02] border border-black/[0.05] rounded-2xl p-6 relative group hover:bg-black/[0.04] transition-colors">
-                    <div class="flex items-center gap-4 mb-4">
-                        <div id="card-win-icon" class="text-4xl filter drop-shadow-sm">🪟</div>
+                <div class="flex-1 bg-black/[0.02] border border-black/[0.05] rounded-2xl p-4 md:p-6 relative group hover:bg-black/[0.04] transition-colors">
+                    <div class="flex items-center gap-4 mb-3">
+                        <div id="card-win-icon" class="text-3xl md:text-4xl filter drop-shadow-sm">🪟</div>
                         <div>
-                            <div class="text-blue-600 text-xs font-bold uppercase tracking-widest mb-1">Windows 习惯</div>
-                            <h3 id="card-win-title" class="text-xl font-semibold text-slate-800">Ctrl 键</h3>
+                            <div class="text-blue-600 text-[10px] md:text-xs font-bold uppercase tracking-widest mb-1">Windows 习惯</div>
+                            <h3 id="card-win-title" class="text-lg md:text-xl font-semibold text-slate-800">Ctrl 键</h3>
                         </div>
                     </div>
-                    <p id="card-win-desc" class="text-apple-secondary text-sm leading-relaxed">位于键盘左下角边缘，小指控制。</p>
+                    <p id="card-win-desc" class="text-apple-secondary text-xs md:text-sm leading-relaxed">位于键盘左下角边缘，小指控制。</p>
                 </div>
 
-                <!-- 转换箭头 -->
                 <div class="flex items-center justify-center text-slate-300 hidden md:flex">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                     </svg>
                 </div>
 
-                <!-- Mac 侧 -->
-                <div class="flex-1 bg-black/[0.02] border border-black/[0.05] rounded-2xl p-6 relative group hover:bg-black/[0.04] transition-colors">
-                    <div class="flex items-center gap-4 mb-4">
-                        <div id="card-mac-icon" class="text-4xl filter drop-shadow-sm">🍎</div>
+                <div class="flex-1 bg-black/[0.02] border border-black/[0.05] rounded-2xl p-4 md:p-6 relative group hover:bg-black/[0.04] transition-colors">
+                    <div class="flex items-center gap-4 mb-3">
+                        <div id="card-mac-icon" class="text-3xl md:text-4xl filter drop-shadow-sm">🍎</div>
                         <div>
-                            <div class="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-purple-500 text-xs font-bold uppercase tracking-widest mb-1">Mac 逻辑</div>
-                            <h3 id="card-mac-title" class="text-xl font-semibold text-slate-800">Command (⌘) 键</h3>
+                            <div class="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-purple-500 text-[10px] md:text-xs font-bold uppercase tracking-widest mb-1">Mac 逻辑</div>
+                            <h3 id="card-mac-title" class="text-lg md:text-xl font-semibold text-slate-800">Command (⌘) 键</h3>
                         </div>
                     </div>
-                    <p id="card-mac-desc" class="text-apple-secondary text-sm leading-relaxed">位于空格键两侧，由大拇指控制。</p>
+                    <p id="card-mac-desc" class="text-apple-secondary text-xs md:text-sm leading-relaxed">位于空格键两侧，由大拇指控制。</p>
                 </div>
             </div>
 
-            <div class="mt-8 pt-6 border-t border-slate-200 relative z-10">
-                <p id="card-summary" class="text-center text-lg text-slate-700 font-medium leading-relaxed" style="letter-spacing: -0.01em;">
+            <div class="mt-6 pt-4 border-t border-slate-200 relative z-10">
+                <p id="card-summary" class="text-center text-sm md:text-lg text-slate-700 font-medium leading-relaxed" style="letter-spacing: -0.01em;">
                     "忘掉边缘的 Ctrl，你的大拇指现在要负责按 ⌘ 了。复制就是 ⌘+C！"
                 </p>
             </div>
@@ -242,76 +268,143 @@
     </div>
 
     <script>
-        // --- 数据定义 (全部替换为明亮模式的 Tailwind 样式) ---
         const transitionData = [
+            // === 组 1: 基础操作 ===
             {
-                id: 'key', title: '灵魂按键',
-                visual: `<div class="flex items-center gap-6"><div class="px-4 py-2 bg-slate-100 rounded-xl border-b-4 border-slate-300 text-lg text-slate-500">Ctrl</div><div class="text-2xl animate-pulse text-blue-500">➡️</div><div class="px-5 py-3 bg-white text-slate-800 font-bold rounded-xl border-b-4 border-slate-200 text-2xl shadow-lg">⌘ cmd</div></div>`,
+                id: 'key', group: 'basic', title: '灵魂按键',
+                visual: `<div class="flex items-center gap-4 md:gap-6"><div class="px-3 py-1.5 md:px-4 md:py-2 bg-slate-100 rounded-xl border-b-4 border-slate-300 text-base md:text-lg text-slate-500">Ctrl</div><div class="text-xl md:text-2xl animate-pulse text-blue-500">➡️</div><div class="px-4 py-2 md:px-5 md:py-3 bg-white text-slate-800 font-bold rounded-xl border-b-4 border-slate-200 text-xl md:text-2xl shadow-lg">⌘ cmd</div></div>`,
                 win: { title: 'Ctrl 键', icon: '⌨️', desc: '位于键盘左下角边缘，通常用小指按压。复制为 Ctrl+C。' },
                 mac: { title: 'Command (⌘)', icon: '⌘', desc: '位于空格键左右两侧，由最灵活的大拇指控制。复制为 ⌘+C。' },
                 summary: '核心改变：把小指的工作交给大拇指，你会发现输入效率大幅提升。'
             },
             {
-                id: 'window', title: '窗口管理',
-                visual: `<div class="w-56 h-32 bg-white rounded-xl border border-slate-200 shadow-xl relative overflow-hidden animate-window-genie"><div class="h-6 bg-slate-100 flex items-center px-2 gap-1.5 border-b border-slate-200"><div class="w-3 h-3 rounded-full bg-red-400 shadow-sm"></div><div class="w-3 h-3 rounded-full bg-yellow-400 shadow-sm"></div><div class="w-3 h-3 rounded-full bg-green-400 shadow-sm"></div></div><div class="p-4 text-xs flex flex-col gap-2"><div class="h-2 w-full bg-slate-200 rounded"></div><div class="h-2 w-2/3 bg-slate-200 rounded"></div></div></div>`,
-                win: { title: '右上角三大金刚', icon: '🗔', desc: '最小化、最大化、关闭按钮固定在窗口右上角。' },
-                mac: { title: '左上角交通灯', icon: '🚥', desc: '红(关闭)、黄(最小化)、绿(全屏)位于左上角。注意：红色通常只关闭窗口，不退出后台程序。' },
-                summary: '视线向左移！习惯左上角操作，并记住 ⌘+Q 才是真正的彻底退出软件。'
+                id: 'right_click', group: 'basic', title: '右键与交互',
+                visual: `<div class="flex items-center gap-4 md:gap-6"><div class="w-12 h-16 md:w-16 md:h-20 bg-slate-100 rounded-full border border-slate-300 flex justify-center pt-2 shadow-inner"><div class="w-4 h-6 md:w-6 md:h-8 border border-slate-300 rounded-full bg-white"></div></div><div class="text-slate-300">🆚</div><div class="w-20 h-12 md:w-24 md:h-16 bg-white rounded-xl border border-slate-200 flex items-center justify-center gap-3 shadow-sm"><div class="w-2 h-2 md:w-3 md:h-3 rounded-full bg-slate-300 animate-bounce" style="animation-delay: 0s;"></div><div class="w-2 h-2 md:w-3 md:h-3 rounded-full bg-slate-300 animate-bounce" style="animation-delay: 0.2s;"></div></div></div>`,
+                win: { title: '鼠标右键', icon: '🖱️', desc: '深度依赖鼠标，使用实体的鼠标右键呼出菜单。' },
+                mac: { title: '触控板手势', icon: '👆', desc: '双指轻按呼出右键，双指滑动滚动，三指拖移窗口。' },
+                summary: '放下鼠标吧！Mac 丝滑的妙控板配合多指手势，会彻底改变你的操作习惯。'
             },
             {
-                id: 'launch', title: '软件启动',
-                visual: `<div class="w-64 h-12 bg-white/80 backdrop-blur-md rounded-xl border border-slate-200 shadow-lg flex items-center px-4 gap-3 animate-spotlight"><span class="text-xl">🔍</span><div class="h-4 bg-slate-100 overflow-hidden whitespace-nowrap" style="animation: typeText 4s steps(10) infinite; font-family: monospace; color: #333; line-height: 16px;">WeChat...</div></div>`,
-                win: { title: '开始菜单 (Start)', icon: '⊞', desc: '点击左下角徽标，在层级菜单中寻找安装的软件。' },
-                mac: { title: '聚焦搜索 (Spotlight)', icon: '🔍', desc: '按下 ⌘+空格，直接输入软件名回车即可瞬间启动。' },
-                summary: '忘掉翻找菜单的习惯，在 Mac 上，“搜索”就是最高效的启动方式。'
-            },
-            {
-                id: 'file', title: '文件管理',
-                visual: `<div class="flex gap-4 items-center"><div class="w-20 h-24 bg-blue-50 border border-blue-200 rounded flex flex-col items-center justify-center gap-2"><div class="text-2xl">🖴</div><div class="text-[10px] text-blue-600 font-medium">C盘 / D盘</div></div><div class="text-slate-300">🆚</div><div class="w-20 h-24 bg-white border border-slate-200 shadow-sm rounded-xl flex flex-col items-center justify-center gap-2"><div class="text-3xl filter drop-shadow-sm">📁</div><div class="flex gap-1"><div class="w-2 h-2 rounded-full bg-red-400"></div><div class="w-2 h-2 rounded-full bg-yellow-400"></div></div></div></div>`,
-                win: { title: 'C盘 / D盘', icon: '🖴', desc: '存在物理分区概念，文件存放在不同的盘符下。' },
-                mac: { title: '访达 (Finder)', icon: '📁', desc: '没有分区的概念，所有文件都在同一个根目录下。善用颜色“标签”。' },
-                summary: '不用再纠结软件装在哪个盘，Mac 为你屏蔽了底层文件系统，按需分类即可。'
-            },
-            {
-                id: 'uninstall', title: '软件卸载',
-                visual: `<div class="relative w-full h-full flex items-center justify-center bg-gradient-to-b from-slate-100 to-slate-200"><div class="absolute bottom-4 right-8 text-5xl filter drop-shadow">🗑️</div><div class="text-5xl absolute animate-drag-trash filter drop-shadow z-10">💬<span class="block text-[10px] text-center mt-1 text-slate-700 font-medium bg-white/80 rounded px-1">微信</span></div></div>`,
-                win: { title: '控制面板', icon: '⚙️', desc: '需要进入控制面板或设置 -> 应用 -> 找到软件 -> 点击卸载。' },
-                mac: { title: '废纸篓 (Trash)', icon: '🗑️', desc: '打开应用程序文件夹，抓起软件图标，直接拖进右下角的废纸篓（或按 ⌘+Delete）。' },
-                summary: '极其解压的体验！绝大多数 Mac 软件无需专门的卸载程序，扔进垃圾桶就干净了。'
-            },
-            {
-                id: 'language', title: '中英切换',
-                visual: `<div class="w-16 h-16 bg-white rounded-xl border border-slate-200 flex flex-col items-center justify-center shadow-md relative"><div class="w-1.5 h-1.5 rounded-full bg-green-500 absolute top-2 left-2 shadow-[0_0_4px_#22c55e] animate-pulse"></div><div class="text-xs text-slate-700 mt-2 font-bold">中/英</div><div class="text-[10px] text-slate-400 mt-1">caps</div></div>`,
-                win: { title: 'Shift 或 Ctrl+空格', icon: '🔤', desc: '通常使用 Shift 键或者组合键在不同输入法之间来回切换。' },
-                mac: { title: '中/英 (大写锁定)', icon: '🌐', desc: '短按 Caps Lock (大写锁定) 键切换中英文，长按该键才是真正的大写锁定。' },
+                id: 'language', group: 'basic', title: '中英切换',
+                visual: `<div class="w-14 h-14 md:w-16 md:h-16 bg-white rounded-xl border border-slate-200 flex flex-col items-center justify-center shadow-md relative"><div class="w-1.5 h-1.5 rounded-full bg-green-500 absolute top-2 left-2 shadow-[0_0_4px_#22c55e] animate-pulse"></div><div class="text-xs text-slate-700 mt-2 font-bold">中/英</div><div class="text-[10px] text-slate-400 mt-1">caps</div></div>`,
+                win: { title: 'Shift/组合键', icon: '🔤', desc: '通常使用 Shift 键或者组合键在不同输入法之间来回切换。' },
+                mac: { title: '中/英 (大写锁定)', icon: '🌐', desc: '短按 Caps Lock 键秒切中英文，长按该键才是大写锁定。' },
                 summary: '极其顺手的改进！把使用率极低的大写锁定键变成了最高频的语言切换开关。'
             },
             {
-                id: 'screenshot', title: '屏幕截图',
-                visual: `<div class="relative w-full h-full bg-slate-200 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-white to-slate-300 overflow-hidden"><div class="absolute inset-0 bg-white/30"></div><div class="absolute border border-blue-400 bg-blue-500/10 animate-screenshot backdrop-blur-[1px]"></div><div class="absolute bottom-4 right-4 text-xs text-slate-700 bg-white/90 p-2 rounded shadow-sm border border-slate-200 animate-pulse">截图已保存</div></div>`,
-                win: { title: 'PrtScn / 截图工具', icon: '✂️', desc: '按 PrintScreen 全屏截图，或使用 Win+Shift+S 呼出系统截图工具。' },
-                mac: { title: '强大的快捷组合', icon: '📸', desc: '⌘+Shift+3 全屏，⌘+Shift+4 框选，⌘+Shift+5 呼出高级截图与录屏面板。' },
-                summary: '多记几个快捷键，Mac 原生的截图和录屏功能异常强大且优雅，截图后右下角的缩略图还能直接拖拽。'
+                id: 'refresh', group: 'basic', title: '刷新页面',
+                visual: `<div class="flex flex-col items-center"><div class="text-3xl md:text-4xl animate-spin text-blue-500 mb-2">🔄</div><div class="px-3 py-1 bg-white border border-slate-200 rounded text-sm font-bold shadow-sm">⌘ + R</div></div>`,
+                win: { title: '狂按 F5', icon: '🌪️', desc: '网页卡住了？习惯性地把手指伸向键盘最顶部的 F5 键。' },
+                mac: { title: 'Cmd + R', icon: '🔄', desc: 'Mac 键盘通常弱化了 F 区。刷新网页，请优雅地按下 ⌘+R。' },
+                summary: '改掉找 F5 的习惯，用左手大拇指加食指按下 ⌘+R，动作幅度更小。'
+            },
+
+            // === 组 2: 系统界面 ===
+            {
+                id: 'window', group: 'system', title: '窗口管理',
+                visual: `<div class="w-48 h-28 md:w-56 md:h-32 bg-white rounded-xl border border-slate-200 shadow-xl relative overflow-hidden animate-window-genie"><div class="h-6 bg-slate-100 flex items-center px-2 gap-1.5 border-b border-slate-200"><div class="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-red-400 shadow-sm"></div><div class="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-yellow-400 shadow-sm"></div><div class="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-green-400 shadow-sm"></div></div><div class="p-4 text-xs flex flex-col gap-2"><div class="h-2 w-full bg-slate-200 rounded"></div><div class="h-2 w-2/3 bg-slate-200 rounded"></div></div></div>`,
+                win: { title: '右上角三大金刚', icon: '🗔', desc: '最小化、最大化、关闭按钮固定在窗口右上角。' },
+                mac: { title: '左上角交通灯', icon: '🚥', desc: '红(关闭)、黄(最小化)、绿(全屏)位于左上角。注意：红色通常不退出程序。' },
+                summary: '视线向左移！习惯左上角操作，并记住 ⌘+Q 才是彻底退出软件。'
             },
             {
-                id: 'task_manager', title: '强制退出',
-                visual: `<div class="w-48 bg-white rounded-lg shadow-xl border border-slate-200 flex flex-col overflow-hidden"><div class="bg-slate-100 text-[10px] p-1.5 text-center text-slate-600 font-medium border-b border-slate-200">强制退出应用程序</div><div class="p-2 flex-1"><div class="bg-blue-50 text-blue-700 p-1 text-xs rounded mb-1 border border-blue-100 font-medium">Safari (无响应)</div><div class="p-1 text-xs text-slate-500">Finder</div></div><div class="flex justify-end p-2 bg-slate-50 border-t border-slate-100"><button class="bg-blue-500 text-white text-[10px] px-3 py-1 rounded shadow-sm">强制退出</button></div></div>`,
-                win: { title: '任务管理器', icon: '📉', desc: '遇到卡死，习惯性按下经典的 Ctrl+Alt+Del 或 Ctrl+Shift+Esc 杀进程。' },
-                mac: { title: '强制退出面板', icon: '🚫', desc: '按下 ⌘+Option+Esc 直接呼出“强制退出”小窗口，精准击杀无响应的软件。' },
-                summary: '遇到彩虹圈（卡死）别慌，⌘+Option+Esc 是你在 Mac 上的救命稻草。'
+                id: 'taskbar', group: 'system', title: '任务栏与停靠',
+                visual: `<div class="flex items-end h-14 md:h-16 gap-2 md:gap-3 p-2 md:p-3 bg-white/50 backdrop-blur rounded-2xl border border-white shadow-lg"><div class="w-8 h-8 md:w-10 md:h-10 bg-blue-100 rounded-xl border border-blue-200 transition-transform hover:-translate-y-4"></div><div class="w-8 h-8 md:w-10 md:h-10 bg-purple-500 rounded-xl shadow-[0_10px_20px_rgba(168,85,247,0.4)] animate-dock-bounce relative"><div class="absolute -bottom-2 left-1/2 -translate-x-1/2 w-1 h-1 bg-slate-800 rounded-full"></div></div><div class="w-8 h-8 md:w-10 md:h-10 bg-green-100 rounded-xl border border-green-200 transition-transform hover:-translate-y-4"></div></div>`,
+                win: { title: '底部任务栏', icon: '📊', desc: '横跨整个底部的长条，显示开始菜单、托盘和所有打开的窗口标签。' },
+                mac: { title: '程序坞 (Dock)', icon: '🛹', desc: '居中悬浮的图标栏。运行中的软件图标下方会有一个小黑点。' },
+                summary: 'Dock 栏只认图标不认窗口。把鼠标移上去，享受图标像波浪一样放大的快感吧！'
             },
             {
-                id: 'right_click', title: '右键与交互',
-                visual: `<div class="flex items-center gap-6"><div class="w-16 h-20 bg-slate-100 rounded-full border border-slate-300 flex justify-center pt-2 shadow-inner"><div class="w-6 h-8 border border-slate-300 rounded-full bg-white"></div></div><div class="text-slate-300">🆚</div><div class="w-24 h-16 bg-white rounded-xl border border-slate-200 flex items-center justify-center gap-3 shadow-sm"><div class="w-3 h-3 rounded-full bg-slate-300 animate-bounce" style="animation-delay: 0s;"></div><div class="w-3 h-3 rounded-full bg-slate-300 animate-bounce" style="animation-delay: 0.2s;"></div></div></div>`,
-                win: { title: '鼠标右键', icon: '🖱️', desc: '深度依赖鼠标，使用实体的鼠标右键呼出上下文菜单。' },
-                mac: { title: '双指轻按 (触控板)', icon: '👆', desc: '在触控板上双指同时轻按呼出右键菜单。另外，双指滑动滚动，三指拖移。' },
-                summary: '放下鼠标吧！Mac 的妙控板（Trackpad）配合丰富的多指手势，会彻底改变你的操作习惯。'
+                id: 'file', group: 'system', title: '文件管理',
+                visual: `<div class="flex gap-4 items-center"><div class="w-16 h-20 md:w-20 md:h-24 bg-blue-50 border border-blue-200 rounded flex flex-col items-center justify-center gap-2"><div class="text-xl md:text-2xl">🖴</div><div class="text-[8px] md:text-[10px] text-blue-600 font-medium">C盘 / D盘</div></div><div class="text-slate-300">🆚</div><div class="w-16 h-20 md:w-20 md:h-24 bg-white border border-slate-200 shadow-sm rounded-xl flex flex-col items-center justify-center gap-2"><div class="text-2xl md:text-3xl filter drop-shadow-sm">📁</div><div class="flex gap-1"><div class="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-red-400"></div><div class="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-yellow-400"></div></div></div></div>`,
+                win: { title: '盘符分区', icon: '🖴', desc: '有物理分区的概念，要记住软件安装在C盘还是D盘。' },
+                mac: { title: '访达 (Finder)', icon: '📁', desc: '没有分区的概念，全部在同一个大目录下。善用颜色标签分类。' },
+                summary: '屏蔽底层逻辑，无需关注“盘符”。个人文件统统扔进“文稿”。'
+            },
+            {
+                id: 'lock', group: 'system', title: '快速锁屏',
+                visual: `<div class="w-28 h-16 md:w-32 md:h-20 bg-slate-800 rounded-lg shadow-2xl flex flex-col items-center justify-center relative overflow-hidden"><div class="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-slate-700 to-transparent opacity-50"></div><div class="text-2xl md:text-3xl filter drop-shadow">🔒</div><div class="text-[8px] text-slate-400 mt-1 md:mt-2">Enter Password</div></div>`,
+                win: { title: 'Win + L', icon: '🏃', desc: '离开工位去洗手间前，习惯性按下 Win 键 + L 迅速锁定电脑。' },
+                mac: { title: '⌃ + ⌘ + Q', icon: '🛡️', desc: '按下组合键锁屏。也可设置“触发角”，鼠标一甩屏幕角落直接锁屏。' },
+                summary: '强烈建议设置鼠标移动到屏幕右下角自动锁屏，彻底解放双手。'
+            },
+
+            // === 组 3: 进阶效能 ===
+            {
+                id: 'launch', group: 'advanced', title: '启动与搜索',
+                visual: `<div class="w-56 h-10 md:w-64 md:h-12 bg-white/80 backdrop-blur-md rounded-xl border border-slate-200 shadow-lg flex items-center px-4 gap-3 animate-spotlight"><span class="text-lg md:text-xl">🔍</span><div class="h-3 md:h-4 bg-slate-100 overflow-hidden whitespace-nowrap" style="animation: typeText 4s steps(10) infinite; font-family: monospace; color: #333; line-height: 16px;">WeChat...</div></div>`,
+                win: { title: '开始菜单', icon: '⊞', desc: '点左下角徽标，在层级菜单里翻找安装好的软件。' },
+                mac: { title: '聚焦搜索', icon: '🔍', desc: '无论在哪里，按下 ⌘+空格，直接输入软件名回车即可瞬间启动。' },
+                summary: '在 Mac 上，“搜索”就是最高效的启动方式，它还能算数学题、查汇率！'
+            },
+            {
+                id: 'desktop', group: 'advanced', title: '显示桌面',
+                visual: `<div class="relative w-40 h-20 md:w-48 md:h-24 bg-blue-50 border border-blue-100 overflow-hidden rounded"><div class="absolute inset-0 flex items-center justify-center opacity-30 text-3xl md:text-4xl">🌄</div><div class="absolute w-16 h-12 md:w-20 md:h-16 bg-white shadow-md rounded border border-slate-200 top-4 left-10 md:left-14 flex items-center justify-center text-[10px] md:text-xs" style="animation: scatterWindows 3s infinite; --tx: -40px; --ty: -30px;">窗口1</div><div class="absolute w-14 h-10 md:w-16 md:h-12 bg-white shadow-md rounded border border-slate-200 top-6 left-14 md:left-16 flex items-center justify-center text-[10px] md:text-xs" style="animation: scatterWindows 3s infinite; --tx: 50px; --ty: 20px;">窗口2</div></div>`,
+                win: { title: 'Win + D', icon: '🧹', desc: '把鼠标狠狠甩到屏幕最右下角的小竖条上点击，或按组合键。' },
+                mac: { title: '四指张开', icon: '🖐️', desc: '非常科幻的手势：大拇指与三指在触控板“向外散开”，飞出所有窗口露出桌面。' },
+                summary: '调度中心的动画极其解压，就像亲手拨开云雾一样拨开窗口。'
+            },
+            {
+                id: 'screenshot', group: 'advanced', title: '屏幕截图',
+                visual: `<div class="relative w-full h-full bg-slate-200 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-white to-slate-300 overflow-hidden"><div class="absolute inset-0 bg-white/30"></div><div class="absolute border border-blue-400 bg-blue-500/10 animate-screenshot backdrop-blur-[1px]"></div><div class="absolute bottom-4 right-4 text-[10px] md:text-xs text-slate-700 bg-white/90 p-1.5 md:p-2 rounded shadow-sm border border-slate-200 animate-pulse">截图已保存</div></div>`,
+                win: { title: '截图工具', icon: '✂️', desc: '使用 Win+Shift+S 呼出系统截图工具，或者按 PrtScn 全屏截图。' },
+                mac: { title: '快捷键组合', icon: '📸', desc: '⌘+Shift+3 全屏，⌘+Shift+4 框选，⌘+Shift+5 呼出高级截图/录屏面板。' },
+                summary: '原生的截图极其强大。截完图右下角会浮现缩略图，可直接拖进微信或文档！'
+            },
+            {
+                id: 'task_manager', group: 'advanced', title: '强制退出',
+                visual: `<div class="w-40 md:w-48 bg-white rounded-lg shadow-xl border border-slate-200 flex flex-col overflow-hidden"><div class="bg-slate-100 text-[8px] md:text-[10px] p-1.5 text-center text-slate-600 font-medium border-b border-slate-200">强制退出应用程序</div><div class="p-2 flex-1"><div class="bg-blue-50 text-blue-700 p-1 text-[10px] md:text-xs rounded mb-1 border border-blue-100 font-medium">Safari (卡死)</div><div class="p-1 text-[10px] md:text-xs text-slate-500">Finder</div></div><div class="flex justify-end p-2 bg-slate-50 border-t border-slate-100"><button class="bg-blue-500 text-white text-[10px] px-2 py-1 md:px-3 rounded shadow-sm">强制退出</button></div></div>`,
+                win: { title: '任务管理器', icon: '📉', desc: '遇到卡死，按下经典的 Ctrl+Alt+Del 杀进程。' },
+                mac: { title: '强制退出面板', icon: '🚫', desc: '按下 ⌘+Option+Esc 直接呼出小窗口，精准击杀彩虹圈软件。' },
+                summary: '遇到鼠标变成一直转的彩虹圈（卡死）别慌，⌘+Option+Esc 是你的救命稻草。'
+            },
+            {
+                id: 'uninstall', group: 'advanced', title: '软件卸载',
+                visual: `<div class="relative w-full h-full flex items-center justify-center bg-gradient-to-b from-slate-100 to-slate-200"><div class="absolute bottom-4 right-8 text-4xl md:text-5xl filter drop-shadow">🗑️</div><div class="text-4xl md:text-5xl absolute animate-drag-trash filter drop-shadow z-10">💬<span class="block text-[8px] md:text-[10px] text-center mt-1 text-slate-700 font-medium bg-white/80 rounded px-1">微信</span></div></div>`,
+                win: { title: '控制面板', icon: '⚙️', desc: '控制面板 -> 程序和功能 -> 找到软件 -> 点击卸载 -> 走进度条。' },
+                mac: { title: '进废纸篓', icon: '🗑️', desc: '暴力美学：打开访达的“应用程序”，抓起软件图标，直接拖进废纸篓。' },
+                summary: '绝大多数 Mac 软件是绿色的“单文件包裹”，不需要专门的卸载程序。'
+            },
+
+            // === 组 4: 表格与办公 ===
+            {
+                id: 'quick_look', group: 'office', title: '空格秒开预览',
+                visual: `<div class="relative w-40 h-24 md:w-48 md:h-28 bg-slate-100 rounded-lg flex items-center justify-center overflow-hidden border border-slate-200"><div class="absolute z-10 text-3xl md:text-4xl animate-ql-file">📊</div><div class="absolute inset-2 bg-white shadow-xl rounded-md border border-slate-200 flex flex-col items-center justify-center p-2 animate-ql-popup"><div class="w-full h-2 bg-slate-100 rounded mb-1"></div><div class="w-3/4 h-2 bg-slate-100 rounded mb-2"></div><div class="flex gap-1 items-end h-8"><div class="w-2 h-4 bg-blue-400"></div><div class="w-2 h-6 bg-blue-500"></div><div class="w-2 h-8 bg-blue-600"></div></div></div></div>`,
+                win: { title: '双击打开软件', icon: '⏳', desc: '想看一眼 Excel 或图片？必须双击，等笨重的软件完全加载完毕才能看。' },
+                mac: { title: '一键“一瞥”', icon: '👁️', desc: '选中任何表格、PPT 或图片，按【空格键】立刻全屏预览，再按空格关闭！' },
+                summary: '做数据最爱的功能！不用打开 Excel，用上下键配合空格就能秒速检查上百个表格。'
+            },
+            {
+                id: 'rename', group: 'office', title: '重命名 (Enter陷阱)',
+                visual: `<div class="flex flex-col items-center gap-2"><div class="text-4xl filter drop-shadow">📁</div><div class="px-2 py-0.5 bg-blue-500 text-white rounded text-[10px] md:text-xs animate-pulse border border-blue-600">Q3_Data.xlsx|</div><div class="mt-1 text-[8px] md:text-[10px] bg-white px-2 py-1 rounded shadow-sm border border-slate-200 font-bold text-slate-600">按下 Enter 键</div></div>`,
+                win: { title: 'F2 与 Enter', icon: '⌨️', desc: '选中文件按 F2 才是重命名，按 Enter 是打开文件。' },
+                mac: { title: 'Enter 即重命名', icon: '✏️', desc: '选中文件按 Enter 键会直接进入【重命名】模式！要打开文件请双击或按 ⌘+O。' },
+                summary: '新手最高频的翻车现场！习惯一下，Mac 认为“修改文件名”比“打开”更需要快捷键。'
+            },
+            {
+                id: 'cursor_jump', group: 'office', title: '表格极速跳转',
+                visual: `<div class="flex flex-col gap-2 w-40 md:w-48 bg-white p-2 border border-slate-200 shadow-sm rounded-lg"><div class="flex gap-1 p-1 bg-slate-50"><div class="w-8 h-4 bg-blue-100 border border-blue-400 relative"><div class="absolute w-0.5 h-3 bg-blue-600 top-0.5 left-0.5 animate-bounce"></div></div><div class="w-8 h-4 bg-slate-200/50"></div><div class="w-8 h-4 bg-slate-200/50"></div><div class="w-8 h-4 flex justify-end items-center pr-1 text-[8px] text-slate-400">...</div></div><div class="text-[8px] md:text-[10px] text-center text-slate-500 font-mono font-bold bg-slate-100 py-1 rounded">⌘ + ➡️ 跳到行尾</div></div>`,
+                win: { title: 'Home / End', icon: '⏭️', desc: '使用键盘上的 Home 或 End 键快速跳到一行的开头或结尾。' },
+                mac: { title: 'Cmd + 方向键', icon: '🧭', desc: '按住 ⌘ 再按方向键，可以瞬间跳到表格的边缘。按 ⌥(Option)+方向键 是按单词跳跃。' },
+                summary: '做表必备！左手大拇指按住 ⌘，右手方向键，在庞大的数据表里穿梭如飞。'
+            },
+            {
+                id: 'paste_special', group: 'office', title: '无格式粘贴',
+                visual: `<div class="flex flex-col items-center gap-2"><div class="flex items-center gap-3"><div class="text-xs font-bold text-red-600 bg-red-50 p-1.5 border border-red-200 rounded">¥1,000.00</div><div class="text-sm">➡️</div><div class="text-xs text-slate-800 bg-slate-100 p-1.5 font-mono border border-slate-300 rounded shadow-inner">1000</div></div><div class="text-[8px] md:text-[10px] bg-slate-100 px-2 py-1 rounded text-slate-500 font-bold border border-slate-200 mt-1">⌘ + ⌥ + ⇧ + V</div></div>`,
+                win: { title: '右键选择', icon: '📋', desc: '通常使用 Ctrl+Shift+V，或者右键调出菜单选择“粘贴为纯文本”。' },
+                mac: { title: '匹配样式粘贴', icon: '🪄', desc: '记住这个超长组合：⌘+Option+Shift+V。它能剥离所有原格式，完美融入当前表格。' },
+                summary: '虽然快捷键很长，但它是整理杂乱数据时的神器，你的手指肌肉会习惯这个动作的。'
+            },
+            {
+                id: 'delete_fwd', group: 'office', title: '向后删除数据',
+                visual: `<div class="flex flex-col items-center gap-2"><div class="text-sm md:text-base font-mono bg-white px-3 py-1.5 rounded shadow-sm border border-slate-200 flex items-center"><span>1024</span><span class="w-0.5 h-4 bg-blue-500 animate-pulse mx-0.5"></span><span class="text-slate-300 line-through">500</span></div><div class="text-[8px] md:text-[10px] text-center bg-slate-100 px-2 py-1 rounded border border-slate-200 font-bold text-slate-500">Fn + Delete</div></div>`,
+                win: { title: 'Back / Delete', icon: '🔙', desc: 'Backspace 删光标前面的字，Delete 删光标后面的字。分工明确。' },
+                mac: { title: 'Fn + Delete', icon: '⌦', desc: 'Mac 只有 Delete 键(实际是向前删)。要向后删数据，必须按 Fn + Delete。' },
+                summary: '修改中间出错的数字时，不用再频繁按左方向键了，左手小指补一个 Fn 键即可向后删。'
             }
         ];
 
-        // --- Canvas 核心引擎 ---
         const canvas = document.getElementById('appCanvas');
-        // 关键修复：移除 { alpha: false }，允许画布透明，露出底层的浅色背景
         const ctx = canvas.getContext('2d'); 
         let width, height;
         let dpr = window.devicePixelRatio || 1;
@@ -323,17 +416,21 @@
         
         let winNodes = [];
         let macNodes = [];
+        let trail = []; 
+        let currentGroup = 'basic'; 
+        let isTouchDevice = false; 
 
-        // 适配明亮主题的色彩
         const colors = {
             bg: 'transparent',
             win: '#0078D4',       
             winHover: '#005A9E',  
-            mac: '#F3F4F6',       // Mac 浅灰白
-            macActive: '#007AFF', // 苹果亮蓝
-            line: 'rgba(0, 0, 0, 0.1)', // 浅色连线
-            lineActive: '#007AFF' 
+            mac: '#F3F4F6',       
+            macActive: '#007AFF', 
         };
+
+        function getFilteredData() {
+            return transitionData.filter(d => d.group === currentGroup);
+        }
 
         function resize() {
             width = window.innerWidth;
@@ -349,22 +446,29 @@
         window.addEventListener('resize', resize);
 
         class Node {
-            constructor(x, y, data, type) {
+            constructor(x, y, data, type, index, isMobile) {
                 this.x = x;
                 this.y = y;
                 this.baseX = x;
                 this.baseY = y;
                 this.data = data;
                 this.type = type; 
-                this.baseRadius = type === 'win' ? 26 : 32; 
+                this.index = index; 
+                this.isMobile = isMobile;
+                
+                this.baseRadius = type === 'win' ? (isMobile ? 22 : 26) : (isMobile ? 26 : 32); 
                 this.radius = this.baseRadius;
                 
-                this.currentScale = 1;
+                this.currentScale = 0; 
                 this.targetScale = 1;
                 
                 this.isHovered = false;
                 this.isActive = false;
                 this.pulse = 0; 
+
+                this.triggerRipple = false;
+                this.rippleRadius = 0;
+                this.rippleAlpha = 0;
             }
 
             draw(ctx) {
@@ -372,10 +476,22 @@
                 this.currentScale += (this.targetScale - this.currentScale) * 0.15;
 
                 const time = Date.now() * 0.0005;
-                this.y = this.baseY + Math.sin(time + this.x) * 3;
+                this.y = this.baseY + Math.sin(time + this.index * 0.5) * 4;
 
                 ctx.save();
                 ctx.translate(this.x, this.y);
+
+                if (this.triggerRipple && this.type === 'mac') {
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.rippleRadius, 0, Math.PI * 2);
+                    ctx.strokeStyle = `rgba(0, 122, 255, ${this.rippleAlpha})`;
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                    this.rippleRadius += 3;
+                    this.rippleAlpha -= 0.05;
+                    if (this.rippleAlpha <= 0) this.triggerRipple = false;
+                }
+
                 ctx.scale(this.currentScale, this.currentScale);
 
                 if (this.isHovered && this.type === 'win') {
@@ -390,21 +506,21 @@
                     ctx.shadowBlur = this.isHovered ? 20 : 8;
                     ctx.shadowOffsetY = 4;
                     
-                    const r = 8; 
+                    const r = this.isMobile ? 6 : 8; 
                     const s = this.radius * 2;
                     ctx.beginPath();
                     ctx.roundRect(-this.radius, -this.radius, s, s, r);
                     ctx.fill();
                     
                     ctx.strokeStyle = 'rgba(255,255,255,0.6)';
-                    ctx.lineWidth = 1.5;
+                    ctx.lineWidth = this.isMobile ? 1 : 1.5;
                     ctx.beginPath();
-                    ctx.moveTo(-this.radius + 5, 0); ctx.lineTo(this.radius - 5, 0);
-                    ctx.moveTo(0, -this.radius + 5); ctx.lineTo(0, this.radius - 5);
+                    const crossOffset = this.isMobile ? 4 : 5;
+                    ctx.moveTo(-this.radius + crossOffset, 0); ctx.lineTo(this.radius - crossOffset, 0);
+                    ctx.moveTo(0, -this.radius + crossOffset); ctx.lineTo(0, this.radius - crossOffset);
                     ctx.stroke();
 
                 } else {
-                    // iMac 图标绘制适配浅色主题
                     if (this.isActive) {
                         ctx.shadowColor = 'rgba(0, 122, 255, 0.5)';
                         ctx.shadowBlur = 20 + Math.sin(this.pulse * 8) * 10; 
@@ -415,67 +531,64 @@
                         ctx.shadowOffsetY = 5;
                     }
 
-                    const bodyColor = this.isActive ? '#E0F2FE' : '#FFFFFF'; // 机身白/淡蓝
-                    const baseColor = this.isActive ? '#7DD3FC' : '#D1D5DB'; // 支架灰
-                    const screenColor = '#111827'; // 屏幕黑
+                    const bodyColor = this.isActive ? '#E0F2FE' : '#FFFFFF'; 
+                    const baseColor = this.isActive ? '#7DD3FC' : '#D1D5DB'; 
+                    const screenColor = '#111827'; 
                     const chinLine = '#E5E7EB';
 
-                    // 1. 支架
+                    const sc = this.isMobile ? 0.8 : 1;
+                    
                     ctx.fillStyle = baseColor;
                     ctx.beginPath();
-                    ctx.moveTo(-7, 10);
-                    ctx.lineTo(7, 10);
-                    ctx.lineTo(11, 26);
-                    ctx.lineTo(-11, 26);
+                    ctx.moveTo(-7 * sc, 10 * sc); ctx.lineTo(7 * sc, 10 * sc);
+                    ctx.lineTo(11 * sc, 26 * sc); ctx.lineTo(-11 * sc, 26 * sc);
                     ctx.fill();
 
-                    // 2. 底座
                     ctx.beginPath();
-                    ctx.roundRect(-16, 24, 32, 4, 2);
+                    ctx.roundRect(-16 * sc, 24 * sc, 32 * sc, 4 * sc, 2 * sc);
                     ctx.fill();
 
-                    // 3. 屏幕边框与下巴
                     ctx.fillStyle = bodyColor;
                     ctx.beginPath();
-                    ctx.roundRect(-28, -26, 56, 40, 6);
+                    ctx.roundRect(-28 * sc, -26 * sc, 56 * sc, 40 * sc, 6 * sc);
                     ctx.fill();
                     
-                    // 下巴分割线
                     ctx.strokeStyle = chinLine;
                     ctx.lineWidth = 1;
                     ctx.beginPath();
-                    ctx.moveTo(-27, 4);
-                    ctx.lineTo(27, 4);
+                    ctx.moveTo(-27 * sc, 4 * sc); ctx.lineTo(27 * sc, 4 * sc);
                     ctx.stroke();
 
-                    // 4. 黑色显示区
                     ctx.fillStyle = screenColor;
                     ctx.beginPath();
-                    ctx.roundRect(-25, -23, 50, 27, 3);
+                    ctx.roundRect(-25 * sc, -23 * sc, 50 * sc, 27 * sc, 3 * sc);
                     ctx.fill();
 
-                    // 5. 苹果 Logo (小灰点)
                     ctx.fillStyle = baseColor;
                     ctx.beginPath();
-                    ctx.arc(0, 9, 2, 0, Math.PI * 2);
+                    ctx.arc(0, 9 * sc, 2 * sc, 0, Math.PI * 2);
                     ctx.fill();
                 }
 
                 ctx.restore();
 
-                // 字体标签改为深色
-                ctx.fillStyle = 'rgba(29, 29, 31, 0.7)';
-                ctx.font = '600 12px -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif'; 
-                ctx.textAlign = 'center';
-                ctx.letterSpacing = '-0.01em';
-                if (this.isActive || this.isHovered) ctx.fillStyle = '#1d1d1f';
-                ctx.fillText(this.data.title, this.x, this.y + this.radius * this.currentScale + 20);
+                if (this.currentScale > 0.5) {
+                    ctx.fillStyle = 'rgba(29, 29, 31, 0.7)';
+                    const fontSize = this.isMobile ? 10 : 12;
+                    ctx.font = `600 ${fontSize}px -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif`; 
+                    ctx.textAlign = 'center';
+                    ctx.letterSpacing = '-0.01em';
+                    if (this.isActive || this.isHovered) ctx.fillStyle = '#1d1d1f';
+                    const yOffset = this.radius * this.currentScale + (this.isMobile ? 16 : 20);
+                    ctx.fillText(this.data.title, this.x, this.y + yOffset);
+                }
             }
 
             checkHover(mx, my) {
                 const dx = mx - this.x;
                 const dy = my - this.y;
-                this.isHovered = (Math.sqrt(dx * dx + dy * dy) < this.baseRadius * 1.5);
+                const tolerance = this.isMobile ? 1.8 : 1.5;
+                this.isHovered = (Math.sqrt(dx * dx + dy * dy) < this.baseRadius * tolerance);
                 return this.isHovered;
             }
         }
@@ -483,97 +596,133 @@
         function initNodes() {
             winNodes = [];
             macNodes = [];
-            const count = transitionData.length;
-            const spacingY = height / (count + 1);
+            
+            const currentData = getFilteredData();
+            const count = currentData.length;
+            const isMobile = window.innerWidth < 768;
+            
+            const fixedSpacingY = isMobile ? 105 : 125; 
+            const totalBlockHeight = (count - 1) * fixedSpacingY;
+            
+            // 下移起始位置，避免抛物线被顶部 UI 遮挡
+            const minStartY = isMobile ? 170 : 250;
+            const startY = Math.max(minStartY, (height - totalBlockHeight) / 2 + (isMobile ? 10 : 30)); 
 
-            const winBaseX = width * 0.22;
-            const macBaseX = width * 0.78;
+            const winBaseX = isMobile ? width * 0.22 : width * 0.32; 
+            const macBaseX = isMobile ? width * 0.78 : width * 0.68;
 
-            transitionData.forEach((data, index) => {
-                const staggerOffset = (index % 2 === 0) ? -45 : 45; 
-                const y = spacingY * (index + 1);
-                winNodes.push(new Node(winBaseX + staggerOffset, y, data, 'win'));
-                macNodes.push(new Node(macBaseX - staggerOffset, y, data, 'mac'));
+            currentData.forEach((data, index) => {
+                const y = startY + index * fixedSpacingY;
+                winNodes.push(new Node(winBaseX, y, data, 'win', index, isMobile));
+                macNodes.push(new Node(macBaseX, y, data, 'mac', index, isMobile));
             });
         }
 
-        function getBezierXY(t, sx, sy, cp1x, cp1y, cp2x, cp2y, ex, ey) {
-            return {
-                x: Math.pow(1-t,3) * sx + 3 * t * Math.pow(1-t,2) * cp1x + 3 * t*t * (1-t) * cp2x + t*t*t * ex,
-                y: Math.pow(1-t,3) * sy + 3 * t * Math.pow(1-t,2) * cp1y + 3 * t*t * (1-t) * cp2y + t*t*t * ey
-            };
-        }
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        function drawConnections() {
+            ctx.save();
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([4, 6]); 
+            
             for (let i = 0; i < winNodes.length; i++) {
                 const wNode = winNodes[i];
                 const mNode = macNodes[i];
-
-                const startX = wNode.x + wNode.radius * wNode.currentScale;
-                const startY = wNode.y;
-                const endX = mNode.x - mNode.radius * mNode.currentScale;
-                const endY = mNode.y;
-
-                const cp1x = startX + (endX - startX) * 0.4;
-                const cp1y = startY;
-                const cp2x = startX + (endX - startX) * 0.6;
-                const cp2y = endY;
-
+                
                 ctx.beginPath();
-                ctx.moveTo(startX, startY);
-                ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, endX, endY);
-
+                ctx.moveTo(wNode.x, wNode.y);
+                
+                const cp1x = wNode.x + (mNode.x - wNode.x) * 0.4;
+                const cp1y = wNode.y;
+                const cp2x = wNode.x + (mNode.x - wNode.x) * 0.6;
+                const cp2y = mNode.y;
+                ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, mNode.x, mNode.y);
+                
                 if (activeConnection === i) {
-                    ctx.strokeStyle = colors.lineActive;
-                    ctx.lineWidth = 2.5;
-                    ctx.shadowColor = 'rgba(0, 122, 255, 0.4)';
-                    ctx.shadowBlur = 10;
+                    ctx.strokeStyle = 'rgba(0, 122, 255, 0.2)';
                 } else {
-                    ctx.strokeStyle = colors.line;
-                    ctx.lineWidth = 1;
-                    ctx.shadowBlur = 0;
+                    ctx.strokeStyle = 'rgba(150, 150, 160, 0.15)'; 
                 }
                 ctx.stroke();
-                ctx.shadowBlur = 0;
+            }
+            ctx.restore();
 
-                // 亮色模式的能量粒子
-                if (activeConnection === i && animationProgress < 1) {
-                    const t = 1 - Math.pow(1 - animationProgress, 3); 
-                    const pos = getBezierXY(t, startX, startY, cp1x, cp1y, cp2x, cp2y, endX, endY);
+            if (trail.length > 0) {
+                ctx.save();
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.beginPath();
+                for (let i = 0; i < trail.length; i++) {
+                    const pt = trail[i];
+                    if (i === 0) ctx.moveTo(pt.x, pt.y);
+                    else ctx.lineTo(pt.x, pt.y);
+                }
+                if (trail.length > 1) {
+                    const grad = ctx.createLinearGradient(trail[0].x, trail[0].y, trail[trail.length-1].x, trail[trail.length-1].y);
+                    grad.addColorStop(0, 'rgba(0, 122, 255, 0)');
+                    grad.addColorStop(1, 'rgba(0, 122, 255, 0.4)');
+                    ctx.strokeStyle = grad;
+                    ctx.lineWidth = 6;
+                    ctx.stroke();
+                }
+                ctx.restore();
 
-                    ctx.beginPath();
-                    ctx.arc(pos.x, pos.y, 4, 0, Math.PI * 2);
-                    ctx.fillStyle = colors.lineActive;
-                    ctx.shadowColor = colors.lineActive;
-                    ctx.shadowBlur = 15;
-                    ctx.fill();
-                    
-                    ctx.beginPath();
-                    ctx.arc(pos.x, pos.y, 10, 0, Math.PI * 2);
-                    ctx.fillStyle = 'rgba(0, 122, 255, 0.2)';
-                    ctx.fill();
-                    ctx.shadowBlur = 0;
+                if (activeConnection === null) {
+                    trail.shift();
+                    if (trail.length > 0) trail.shift(); 
                 }
             }
-        }
 
-        function draw() {
-            // 清空画布透出下层的 HTML 背景
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (activeConnection !== null && animationProgress < 1) {
+                const wNode = winNodes[activeConnection];
+                const mNode = macNodes[activeConnection];
+                
+                const startX = wNode.x;
+                const startY = wNode.y;
+                const endX = mNode.x;
+                const endY = mNode.y;
 
-            drawConnections();
+                const t = animationProgress;
+                const easeT = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+                
+                // 收敛抛物线高度，避免碰到顶部
+                const arcMax = window.innerWidth < 768 ? 60 : 90;
+                const arcOffset = Math.sin(t * Math.PI) * arcMax; 
+                
+                const currentX = startX + (endX - startX) * easeT;
+                const currentY = startY + (endY - startY) * easeT - arcOffset;
+
+                trail.push({ x: currentX, y: currentY });
+                if (trail.length > 25) trail.shift();
+
+                ctx.beginPath();
+                ctx.arc(currentX, currentY, 8, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffffff';
+                ctx.shadowColor = easeT > 0.5 ? colors.macActive : colors.win;
+                ctx.shadowBlur = 15;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+
+                ctx.beginPath();
+                ctx.arc(currentX, currentY, 18, 0, Math.PI * 2);
+                ctx.fillStyle = easeT > 0.5 ? 'rgba(0, 122, 255, 0.25)' : 'rgba(0, 120, 212, 0.25)';
+                ctx.fill();
+
+                animationProgress += 0.025; 
+                
+                if (animationProgress >= 1) {
+                    mNode.isActive = true;
+                    mNode.triggerRipple = true;
+                    mNode.rippleRadius = mNode.baseRadius;
+                    mNode.rippleAlpha = 1;
+
+                    showInfoCard(getFilteredData()[activeConnection]);
+                    activeConnection = null;
+                }
+            }
 
             winNodes.forEach(node => node.draw(ctx));
             macNodes.forEach(node => node.draw(ctx));
-
-            if (activeConnection !== null && animationProgress < 1) {
-                animationProgress += 0.018; 
-                
-                if (animationProgress >= 1) {
-                    macNodes[activeConnection].isActive = true;
-                    showInfoCard(transitionData[activeConnection]);
-                }
-            }
 
             requestAnimationFrame(draw);
         }
@@ -581,6 +730,8 @@
         const mouseLens = document.getElementById('mouse-lens');
 
         canvas.addEventListener('mousemove', (e) => {
+            if (isTouchDevice) return; 
+
             const rect = canvas.getBoundingClientRect();
             mouseX = e.clientX - rect.left;
             mouseY = e.clientY - rect.top;
@@ -608,12 +759,48 @@
         });
 
         canvas.addEventListener('click', () => {
+            if (isTouchDevice) return; 
             if (hoveredNode) {
                 const index = winNodes.indexOf(hoveredNode);
-                if (index !== -1) {
-                    triggerTransition(index);
-                }
+                if (index !== -1) triggerTransition(index);
             }
+        });
+
+        canvas.addEventListener('touchstart', (e) => {
+            isTouchDevice = true;
+            mouseLens.style.opacity = '0'; 
+
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            const touchX = touch.clientX - rect.left;
+            const touchY = touch.clientY - rect.top;
+
+            let tappedNode = null;
+            winNodes.forEach(node => {
+                if (node.checkHover(touchX, touchY)) {
+                    tappedNode = node;
+                }
+            });
+
+            if (tappedNode) {
+                const index = winNodes.indexOf(tappedNode);
+                if (index !== -1) triggerTransition(index);
+            }
+        }, { passive: true });
+
+
+        document.querySelectorAll('.group-tab').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.group-tab').forEach(b => b.classList.remove('active'));
+                const target = e.target;
+                target.classList.add('active');
+
+                currentGroup = target.dataset.group;
+                hideInfoCard();
+                trail = [];
+                activeConnection = null;
+                initNodes(); 
+            });
         });
 
         function triggerTransition(index) {
@@ -622,6 +809,7 @@
             
             activeConnection = index;
             animationProgress = 0;
+            trail = []; 
             
             document.getElementById('hint').style.opacity = '0';
         }
@@ -652,8 +840,13 @@
 
         function hideInfoCard() {
             overlay.classList.remove('active');
+            
+            // 关闭卡片时，确保所有 Mac 节点的激活状态都被重置 (修复闪烁 Bug)
+            macNodes.forEach(node => {
+                node.isActive = false;
+            });
+            
             if(activeConnection !== null) {
-                macNodes[activeConnection].isActive = false;
                 activeConnection = null;
             }
         }
